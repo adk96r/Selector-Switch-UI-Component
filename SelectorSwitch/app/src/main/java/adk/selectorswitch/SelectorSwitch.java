@@ -3,8 +3,10 @@ package adk.selectorswitch;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.RectF;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.view.View;
@@ -47,7 +49,10 @@ public class SelectorSwitch extends View {
     // Knob
     int knobRadius;
     int notchRadius;
+    int notchHandleLength;
     Paint knobPaint;
+    Path knobAndNotchPath;
+    Matrix knobRotationMatrix;
 
 
     public SelectorSwitch(Context context) {
@@ -59,7 +64,7 @@ public class SelectorSwitch extends View {
         super(context, attrs);
         init(context, 0);
     }
-    
+
     private void init(Context context, int size) {
 
         this.context = context;
@@ -72,6 +77,7 @@ public class SelectorSwitch extends View {
 
         basePaint = createPaint(Color.WHITE, Paint.Style.FILL, true, Color.LTGRAY);
 
+
         // Size specific properties
         switch (size) {
             case SIZE_MINI:
@@ -81,8 +87,21 @@ public class SelectorSwitch extends View {
                 initNormalMode();
         }
 
+
+
     }
 
+    /**
+     * Initiates the selector for a normal size, where the properties are -
+     *
+     * modeCount = 3
+     * modeRadius = 16
+     * knobRadius = 4
+     * notchRadius = 1
+     * notchHandleLength = 3
+     * knob initial angle = 0
+     *
+     */
     void initNormalMode() {
 
         modeCount = 3;
@@ -99,9 +118,31 @@ public class SelectorSwitch extends View {
 
         // Exclusive for Normal Mode Selector Switch.
         modeRadius = getPixelsFromDips(16);
-        knobRadius = getPixelsFromDips(7);
-        notchRadius = getPixelsFromDips(2);
+        knobRadius = getPixelsFromDips(4);
+        notchRadius = getPixelsFromDips(1);
+        notchHandleLength = getPixelsFromDips(3);
         knobPaint = createPaint(Color.WHITE, Paint.Style.FILL, true, Color.argb(255, 100, 100, 100));
+
+        // Draw the knob and the notch.
+        knobAndNotchPath = new Path();
+
+        // Central Knob.
+        knobAndNotchPath.addArc(centerX - knobRadius, centerY - knobRadius, centerX + knobRadius, centerY + knobRadius, 230, 260);
+
+        // The End Notch.
+        knobAndNotchPath.addArc(centerX - knobRadius - notchHandleLength - notchRadius, centerY - notchRadius,
+                centerX - knobRadius - notchHandleLength + notchRadius, centerY + notchRadius, 90, 180);
+
+        // The Handle between them.
+        knobAndNotchPath.moveTo(centerX - notchHandleLength + notchRadius / 2, centerY - knobRadius * 3 / 4);
+        knobAndNotchPath.lineTo(centerX - knobRadius - notchHandleLength, centerY - notchRadius);
+        knobAndNotchPath.lineTo(centerX - knobRadius - notchHandleLength, centerY + notchRadius);
+        knobAndNotchPath.lineTo(centerX - notchHandleLength + notchRadius / 2, centerY + knobRadius * 3 / 4);
+        knobAndNotchPath.close();
+
+        knobRotationMatrix = new Matrix();
+        knobRotationMatrix.postRotate(0, centerX, centerY);
+        knobAndNotchPath.transform(knobRotationMatrix);
 
     }
 
@@ -142,22 +183,8 @@ public class SelectorSwitch extends View {
                     modeStartingAngles.get(i), modeSweepingAngle, true, modePaints.get(i));
         }
 
-        // Draw the knob.
-        Path notch = new Path();
-
-        notch.addArc(centerX - knobRadius, centerY - knobRadius, centerX + knobRadius, centerY + knobRadius, 195, 330);
-
-        notch.addCircle(centerX - knobRadius - notchRadius, centerY, notchRadius, Path.Direction.CW);
-
-        notch.moveTo(centerX - knobRadius - notchRadius - getPixelsFromDips(1) / 2, centerY - notchRadius);
-        notch.lineTo(centerX, centerY - knobRadius);
-        notch.lineTo(centerX, centerY + knobRadius);
-        notch.lineTo(centerX - knobRadius - notchRadius - getPixelsFromDips(1) / 2, centerY + notchRadius);
-
-        notch.close();
-
-        canvas.drawPath(notch, knobPaint);
-
+        // Draw the knob and the notch.
+        canvas.drawPath(knobAndNotchPath, knobPaint);
 
     }
 
@@ -302,5 +329,6 @@ public class SelectorSwitch extends View {
     public void setModeColors(@NonNull Color startingColor, @NonNull Color endingColor) {
 
     }
+    
 }
 
