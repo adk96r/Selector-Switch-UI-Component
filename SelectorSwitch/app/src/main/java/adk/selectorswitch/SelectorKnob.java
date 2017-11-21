@@ -1,40 +1,80 @@
 package adk.selectorswitch;
 
-import android.graphics.Color;
+import android.content.Context;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.Path;
 
 
 /**
- * Created by Adu on 11/21/2017.
+ * Cooked by ADK96r on 21 Nov '17.
  */
 
-public class SelectorKnob {
+class SelectorKnob {
 
+    private final static int knobRadius1DIP = 4;
+    private final static int knobRadius2DIP = 1;
+    private final static int knobLengthDIP = 3;
+    private final static int knobCentralStartingAngle = 230;
+    private final static int knobCentralSweepingAngle = 260;
+    private final static int notchStartingAngle = 90;
+    private final static int notchSweepingAngle = 180;
+
+    private float screenDensity;
     private Path knobPath;
-    private int knobRadius1;
-    private int knobRadius2;
-    private int knobLength;
     private int centerX, centerY;
 
-    public SelectorKnob(int centerX, int centerY, SelectorUtil util) {
+    /**
+     * Initialises the knob based on another path.
+     *
+     * @param context  Context to get the density of the screen.
+     * @param knobPath Path of a knob.
+     */
+    public SelectorKnob(Context context, Path knobPath) {
+        this.knobPath = knobPath;
+        this.screenDensity = context.getTheme().getResources().getDisplayMetrics().density;
+    }
 
-        // Set knob properties.
-        knobRadius1 = util.getPixelsFromDips(4);
-        knobRadius2 = util.getPixelsFromDips(1);
-        knobLength = util.getPixelsFromDips(3);
+    /**
+     * Initialises the knob based on default values.
+     *
+     * @param context Context to get the density of the screen.
+     * @param centerX Horizontal center of the knob.
+     * @param centerY Vertical center of the knob.
+     */
+    SelectorKnob(Context context, int centerX, int centerY) {
+        this.centerX = centerX;
+        this.centerY = centerY;
+        this.screenDensity = context.getTheme().getResources().getDisplayMetrics().density;
+        initiateKnob();
+    }
 
+    /**
+     * Sets the dimensions and completely defines the knob path
+     * which can be drawn on a canvas later.
+     */
+    private void initiateKnob() {
 
+        // Set knob dimensions.
+        int knobRadius1 = SelectorUtil.getPixelsFromDips(knobRadius1DIP, screenDensity);
+        int knobRadius2 = SelectorUtil.getPixelsFromDips(knobRadius2DIP, screenDensity);
+        int knobLength = SelectorUtil.getPixelsFromDips(knobLengthDIP, screenDensity);
         knobPath = new Path();
 
         // The central knob.
-        knobPath.addArc(centerX - knobRadius1, centerY - knobRadius1, centerX + knobRadius1,
-                centerY + knobRadius1, 230, 260);
+        knobPath.addArc(centerX - knobRadius1,
+                centerY - knobRadius1,
+                centerX + knobRadius1,
+                centerY + knobRadius1,
+                knobCentralStartingAngle,
+                knobCentralSweepingAngle);
 
         // The end notch.
-        knobPath.addArc(centerX - knobRadius1 - knobLength - knobRadius2, centerY - knobRadius2,
-                centerX - knobRadius1 - knobLength + knobRadius2, centerY + knobRadius2, 90, 180);
+        knobPath.addArc(centerX - knobRadius1 - knobLength - knobRadius2,
+                centerY - knobRadius2,
+                centerX - knobRadius1 - knobLength + knobRadius2,
+                centerY + knobRadius2,
+                notchStartingAngle,
+                notchSweepingAngle);
 
         // The handle between them.
         knobPath.moveTo(centerX - knobLength + knobRadius2 / 2, centerY - knobRadius1 * 3 / 4);
@@ -45,10 +85,21 @@ public class SelectorKnob {
 
     }
 
-    public Path getKnobPath() {
+    /**
+     * Returns the knob's path for drawing purposes.
+     *
+     * @return knobPath
+     */
+    Path getKnobPath() {
         return this.knobPath;
     }
 
+    /**
+     * Applies a rotation transformation to the knob's path
+     * to rotate it.
+     *
+     * @param rotationMatrix Transformation matrix.
+     */
     public void rotateKnob(Matrix rotationMatrix) {
         this.knobPath.transform(rotationMatrix);
     }

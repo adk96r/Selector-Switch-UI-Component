@@ -8,10 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Adu on 11/21/2017.
+ * Cooked by ADK96r on 21 Nov '17.
  */
 
-public class SelectorUtil {
+class SelectorUtil {
 
     private Context context;
 
@@ -19,36 +19,12 @@ public class SelectorUtil {
         this.context = context;
     }
 
-    /**
-     * Converts DIPs to Pixels.
-     *
-     * @param dips DIPs.
-     * @return pixels   Equivalent to the given DIPs.
-     */
-    public int getPixelsFromDips(int dips) {
-        float density = context.getTheme().getResources().getDisplayMetrics().density;
-        return (int) (density * dips / 0.5);
-    }
-
-    /**
-     * Returns a Paint instance created as per the required specs.
-     *
-     * @param color         Color of the paint.
-     * @param style         Fill, Stroke, etc.
-     * @param shadowEnabled Enables shadow for the objects using this paint.
-     * @param shadowColor   Color of the shadow if the shadow is enabled.
-     * @return paint        Paint instance created.
-     */
-    public Paint createPaintFromColor(int color, Paint.Style style, boolean shadowEnabled, int shadowColor) {
-
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setColor(color);
-        paint.setStyle(style);
-        paint.setAntiAlias(true);
-        if (shadowEnabled) {
-            paint.setShadowLayer(getPixelsFromDips(2), 0, 0, shadowColor);
+    static List<Integer> arrayToList(int[] array) {
+        List<Integer> list = new ArrayList<>(array.length);
+        for (int anArray : array) {
+            list.add(anArray);
         }
-        return paint;
+        return list;
     }
 
     /**
@@ -57,19 +33,19 @@ public class SelectorUtil {
      * @param maxModes Number of modes in the selector dial.
      * @return sweepingAngle
      */
-    public Float getSweepingAngle(int maxModes) {
+    static float getSweepingAngle(int maxModes) {
         return (float) 360 / maxModes;
     }
 
     /**
-     * Generates the starting angle for each mode position on the dial of the selector.
+     * Generates the starting angle for each mode on the dial of the selector.
      *
      * @param dialModeCount Number of modes in the selector dial.
      * @param sweepingAngle Angle between the starting angles of two
      *                      successive modes on the dial.
      * @return startingAngles   List of starting angles for each mode in the selector dial.
      */
-    public List<Float> generateStartingAngles(int dialModeCount, Float sweepingAngle) {
+    static List<Float> generateStartingAngles(int dialModeCount, Float sweepingAngle) {
         List<Float> startingAngles = new ArrayList<>(dialModeCount);
         for (int i = 0; i < dialModeCount; i++) {
             startingAngles.add(i * sweepingAngle);
@@ -84,20 +60,28 @@ public class SelectorUtil {
      * @param colors        List of Color(integers).
      * @return dialPaints  List of Paint instances.
      */
-    public List<Paint> generateDialPaints(int dialModeCount, List<Integer> colors) {
+    static List<Paint> generateDialPaints(int dialModeCount, List<Integer> colors) {
         List<Paint> dialPaints = new ArrayList<>(dialModeCount);
         for (int i = 0; i < dialModeCount; i++) {
             if (i < colors.size())
-                dialPaints.add(createPaintFromColor(colors.get(i), Paint.Style.FILL, false, Color.LTGRAY));
+                dialPaints.add(createPaintFromColor(colors.get(i), Paint.Style.FILL, false, 0, 0));
             else
-                dialPaints.add(createPaintFromColor(Color.BLACK, Paint.Style.FILL, false, Color.LTGRAY));
+                dialPaints.add(createPaintFromColor(Color.BLACK, Paint.Style.FILL, false, 0, 0));
         }
         return dialPaints;
     }
 
-    public List<Integer> generateBlendingColors(int dialModeCount, int startingColor, int endingColor) {
+    /**
+     * Generates a list of colors that blend from a starting color to an ending color.
+     *
+     * @param dialModeCount Size of the list.
+     * @param startingColor Color to start blending from.
+     * @param endingColor   Color to finally blend into.
+     * @return colorList
+     */
+    static List<Integer> generateBlendingColors(int dialModeCount, int startingColor, int endingColor) {
 
-        List<Integer> blendedColors = new ArrayList<>(dialModeCount);
+        List<Integer> colorList = new ArrayList<>(dialModeCount);
         float[] startingColorHSV = new float[3];
         float[] endingColorHSV = new float[3];
 
@@ -114,10 +98,44 @@ public class SelectorUtil {
             temp = new float[]{startingColorHSV[0] + i * hInc,
                     startingColorHSV[1] + i * sInc,
                     startingColorHSV[2] + i * vInc};
-            blendedColors.add(Color.HSVToColor(temp));
+            colorList.add(Color.HSVToColor(temp));
         }
 
-        return blendedColors;
+        return colorList;
     }
+
+    /**
+     * Converts DPs to Pixels based on the screen's pixel density.
+     *
+     * @param dps DPs.
+     * @return pixels   Pixel count equivalent to the given DP value.
+     */
+    static int getPixelsFromDips(int dps, float density) {
+        return (int) (density * dps / 0.5);
+    }
+
+    /**
+     * Returns a paint instance created as per the required specs.
+     *
+     * @param color         Color of the paint.
+     * @param style         Fill, Stroke, etc.
+     * @param shadowEnabled Enables shadow for the objects using this paint.
+     * @param shadowColor   Color of the shadow if the shadow is enabled.
+     * @param shadowLength  Length of the shadow in pixels.
+     * @return paint        Paint instance created.
+     */
+    static Paint createPaintFromColor(int color, Paint.Style style, boolean shadowEnabled,
+                                      int shadowColor, int shadowLength) {
+
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setColor(color);
+        paint.setStyle(style);
+        paint.setAntiAlias(true);
+        if (shadowEnabled) {
+            paint.setShadowLayer(shadowLength, 0, 0, shadowColor);
+        }
+        return paint;
+    }
+
 
 }

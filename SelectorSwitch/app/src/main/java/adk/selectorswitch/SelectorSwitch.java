@@ -16,17 +16,29 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Created by ADK96r on 11/20/2017.
+ * Cooked by ADK96r on 21 Nov'17.
  */
 
 public class SelectorSwitch extends View {
 
+    private static final int[] DEFAULT_DIAL_COLORS = new int[]{Color.HSVToColor(new float[]{29f, 23.1f, 94.9f}),
+            Color.HSVToColor(new float[]{59f, 26.3f, 89.4f}),
+            Color.HSVToColor(new float[]{129f, 21.7f, 77.6f})};
+
+    private static final List<String> DEFAULT_MODES =
+            Arrays.asList(new String[]{"LOW", "MID", "HIGH"});
+
+
     Context context;
+    float screenDensity;
+    private int SPACE_DIP = 6;
+    private int BASE_RADIUS_DIP = 16;
+    private int BASE_SHADOW_RADIUS = 2;
+    private int KNOB_SHADOW_RADIUS = 1;
+    private int BASE_SHADOW_COLOR = Color.LTGRAY;
+    private int KNOB_SHADOW_COLOR = Color.argb(255, 100, 100, 100);
 
-    // Utilities
-    SelectorUtil selectorUtil;
-
-    // Component Properties
+    // Switch Properties
     private int space;
     private int centerX;
     private int centerY;
@@ -35,11 +47,12 @@ public class SelectorSwitch extends View {
     private int baseRadius;
     private Paint basePaint;
 
-    // Selector Dial
+    // Dial Properties.
     private SelectorDial selectorDial;
+    private int[] selectorDialColors;
     private RectF selectorDialRectF;
 
-    // Selector Knob
+    // Knob Properties.
     private SelectorKnob selectorKnob;
     private Matrix knobRotationMatrix;
     private float knobRotationAngle;
@@ -49,72 +62,127 @@ public class SelectorSwitch extends View {
     private List<String> modes;
     private int currentMode;
 
+    /**
+     * Initialises the selector switch components.
+     *
+     * @param context Context to get the screen density.
+     * @throws IllegalSelectorException
+     */
     public SelectorSwitch(Context context) throws IllegalSelectorException {
         super(context);
-        initialise(context, null);
-    }
-
-    public SelectorSwitch(Context context, @Nullable AttributeSet attrs) throws IllegalSelectorException {
-        super(context, attrs);
-        initialise(context, attrs);
-    }
-
-    private void initialise(Context context, AttributeSet attrs) throws IllegalSelectorException {
 
         this.context = context;
-        this.selectorUtil = new SelectorUtil(context);
+        this.screenDensity = context.getTheme().getResources().getDisplayMetrics().density;
+        initModesAndColors(null);
+        initComponents();
+    }
 
-        // First get the modes for the selector switch.
+    /**
+     * Initialises the selector switch components.
+     *
+     * @param context Context to get the screen density.
+     * @param attrs   Attributes from the component's XML in the layout files.
+     * @throws IllegalSelectorException
+     */
+    public SelectorSwitch(Context context, @Nullable AttributeSet attrs) throws IllegalSelectorException {
+        super(context, attrs);
+
+        this.context = context;
+        this.screenDensity = context.getTheme().getResources().getDisplayMetrics().density;
+        initModesAndColors(attrs);
+        initComponents();
+    }
+
+    /**
+     * Initialises the modes and colors for each mode from the resource references in the
+     * component's XML code from the layout files. If no modes or colors are specified default
+     * values are used for both.
+     * <p>
+     * Throws an illegal selector exception if there isn't a color for each mode.
+     *
+     * @param attrs Attribute set of the XML.
+     * @throws IllegalSelectorException
+     */
+    private void initModesAndColors(AttributeSet attrs) throws IllegalSelectorException {
+
         TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.SelectorSwitch);
+        int resId;
+
+        this.modes = DEFAULT_MODES;
+        this.selectorDialColors = DEFAULT_DIAL_COLORS;
+
+        if (attrs == null)
+            return;
+
         try {
-            int resId = typedArray.getResourceId(R.styleable.SelectorSwitch_modes, R.array.modes);
-            this.modes = Arrays.asList(context.getResources().getStringArray(resId));
+            // First get the modes in the dial.
+            resId = typedArray.getResourceId(R.styleable.SelectorSwitch_modes, 0);
+            if (resId != 0)
+                this.modes = Arrays.asList(context.getResources().getStringArray(resId));
+
+            // Next get the colors for each mode in the dial.
+            resId = typedArray.getResourceId(R.styleable.SelectorSwitch_dialColors, 0);
+            if (resId != 0)
+                this.selectorDialColors = context.getResources().getIntArray(resId);
+
         } finally {
             typedArray.recycle();
         }
 
-        // Footprint of the switch
-        space = selectorUtil.getPixelsFromDips(6);
-        baseRadius = selectorUtil.getPixelsFromDips(16);
+        // Check if every mode has a color.
+        if (this.modes.size() != this.selectorDialColors.length) {
+            throw new IllegalSelectorException("Unequal number of modes and colors.");
+        }
+
+    }
+
+    /**
+     * Initialises the structural properties of various parts of the selector switch which
+     * include the base, the dial and the knob. Also initialise the paints used on these
+     * parts.
+     * <p>
+     * Could rethrow an illegal selector exception thrown while constructing the selection
+     * dial.
+     *
+     * @throws IllegalSelectorException
+     */
+    private void initComponents() throws IllegalSelectorException {
+
+        // First the footprint of the component.
+        space = SelectorUtil.getPixelsFromDips(SPACE_DIP, screenDensity);
+        baseRadius = SelectorUtil.getPixelsFromDips(BASE_RADIUS_DIP, screenDensity);
         centerX = space + baseRadius;
         centerY = space + baseRadius;
-        basePaint = selectorUtil.createPaintFromColor(Color.WHITE, Paint.Style.FILL, true, Color.LTGRAY);
-        setLayerType(LAYER_TYPE_SOFTWARE, basePaint);
 
-        // Setup the Dial.
-        selectorDial = new SelectorDial(selectorUtil, this.modes.size());
+
+        // Next, the dial.
+        selectorDial = new SelectorDial(context, this.modes.size(), selectorDialColors);
         int selectorDialRadius = selectorDial.getDialRadius();
         selectorDialRectF = new RectF(centerX - selectorDialRadius,
                 centerY - selectorDialRadius,
                 centerX + selectorDialRadius,
                 centerY + selectorDialRadius);
 
-        // Setup the Knob.
-        selectorKnob = new SelectorKnob(centerX, centerY, selectorUtil);
-        knobRotationAngle = 0.0f;
-        knobRotationMatrix = new Matrix();
-        knobPaint = selectorUtil.createPaintFromColor(Color.WHITE, Paint.Style.FILL, true,
-                Color.argb(255, 100, 100, 100));
+        // Then, the knob.
+        selectorKnob = new SelectorKnob(context, centerX, centerY);
+
+        // Now the paints.
+        basePaint = SelectorUtil.createPaintFromColor(Color.WHITE, Paint.Style.FILL, true,
+                BASE_SHADOW_COLOR, SelectorUtil.getPixelsFromDips(BASE_SHADOW_RADIUS, screenDensity));
+        setLayerType(LAYER_TYPE_SOFTWARE, basePaint);
+
+        knobPaint = SelectorUtil.createPaintFromColor(Color.WHITE, Paint.Style.FILL, true,
+                KNOB_SHADOW_COLOR, SelectorUtil.getPixelsFromDips(KNOB_SHADOW_RADIUS, screenDensity));
         setLayerType(LAYER_TYPE_SOFTWARE, knobPaint);
 
-        // Setup the initial state for the switch.
+        // Finally, the initial state of the selector switch.
         this.currentMode = 0;
-        knobRotationMatrix = new Matrix();
-        knobRotationMatrix.postRotate(0, centerX, centerY);
+        this.knobRotationAngle = 0.0f;
+        this.knobRotationMatrix = new Matrix();
+        this.knobRotationMatrix.postRotate(0, centerX, centerY);
 
     }
 
-
-    /**
-     * Sets the structural properties of both the dial and the knob.
-     * <p>
-     * dialModeCount = 3
-     * dialRadius = 16
-     * knobRadius1 = 4
-     * knobRadius2 = 1
-     * knobLength = 3
-     * knob initial angle = 0
-     */
 
     /**
      * Calculate and set the dimensions of the view.
@@ -140,6 +208,11 @@ public class SelectorSwitch extends View {
         setMeasuredDimension(width, height);
     }
 
+    /**
+     * Draws the selector component on the canvas
+     *
+     * @param canvas Canvas to be drawn upon.
+     */
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -152,16 +225,13 @@ public class SelectorSwitch extends View {
             canvas.drawArc(selectorDialRectF,
                     selectorDial.getModeStartingAngle(mode),
                     selectorDial.getModeSweepingAngle(),
-                    true, selectorDial.getDailPaintForMode(mode));
+                    true, selectorDial.getDialPaintForMode(mode));
         }
 
         // Draw the knob and the notch.
         canvas.drawPath(selectorKnob.getKnobPath(), knobPaint);
 
     }
-
-
-    // Selector Dial Operations //
 
     public SelectorDial getSelectorDial() {
         return this.selectorDial;

@@ -5,4 +5,10 @@
         <item name="medium">Medium</item>
         <item name="high">High</item>
     </string-array>
+    
+    <integer-array name="dialColors">
+        <item>@color/colorAccent</item>
+        <item>@color/colorPrimary</item>
+        <item>@color/colorPrimaryDark</item>
+    </integer-array>
 </resources>
