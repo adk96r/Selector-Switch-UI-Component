@@ -1,156 +1,126 @@
 package adk.selectorswitch;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.RectF;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * Created by Adu on 11/20/2017.
+ * Created by ADK96r on 11/20/2017.
  */
 
 public class SelectorSwitch extends View {
 
-    private final static int SIZE_NORMAL = -1;
-    private final static int SIZE_MINI = -2;
-    private final static int SIZE_MAX = -3;
-
     Context context;
 
+    // Utilities
+    SelectorUtil selectorUtil;
+
     // Component Properties
-    int space;
-    int shadowRadius = 8;
-    int lightShadow = Color.LTGRAY;
-    int darkShadow = Color.DKGRAY;
-    int centerX;
-    int centerY;
+    private int space;
+    private int centerX;
+    private int centerY;
 
     // Base Properties
-    int baseRadius;
-    Paint basePaint;
+    private int baseRadius;
+    private Paint basePaint;
 
     // Selector Dial
-    int modeCount;
-    int modeRadius;
-    Float modeSweepingAngle;
-    List<Float> modeStartingAngles;
-    List<Paint> modePaints;
-    List<Integer> modeColors;
+    private SelectorDial selectorDial;
+    private RectF selectorDialRectF;
 
-    // Knob
-    int knobRadius;
-    int notchRadius;
-    int notchHandleLength;
-    Paint knobPaint;
-    Path knobAndNotchPath;
-    Matrix knobRotationMatrix;
+    // Selector Knob
+    private SelectorKnob selectorKnob;
+    private Matrix knobRotationMatrix;
+    private float knobRotationAngle;
+    private Paint knobPaint;
 
+    // Current state of the switch
+    private List<String> modes;
+    private int currentMode;
 
-    public SelectorSwitch(Context context) {
+    public SelectorSwitch(Context context) throws IllegalSelectorException {
         super(context);
-        init(context, 0);
+        initialise(context, null);
     }
 
-    public SelectorSwitch(Context context, AttributeSet attrs) {
+    public SelectorSwitch(Context context, @Nullable AttributeSet attrs) throws IllegalSelectorException {
         super(context, attrs);
-        init(context, 0);
+        initialise(context, attrs);
     }
 
-    private void init(Context context, int size) {
+    private void initialise(Context context, AttributeSet attrs) throws IllegalSelectorException {
 
         this.context = context;
+        this.selectorUtil = new SelectorUtil(context);
 
-        // Common for all sizes
-        space = getPixelsFromDips(6);
-        baseRadius = getPixelsFromDips(18);
-        centerX = space + baseRadius;
-        centerY = space + baseRadius;
-
-        basePaint = createPaint(Color.WHITE, Paint.Style.FILL, true, Color.LTGRAY);
-
-
-        // Size specific properties
-        switch (size) {
-            case SIZE_MINI:
-            case SIZE_MAX:
-            case SIZE_NORMAL:
-            default:
-                initNormalMode();
+        // First get the modes for the selector switch.
+        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.SelectorSwitch);
+        try {
+            int resId = typedArray.getResourceId(R.styleable.SelectorSwitch_modes, R.array.modes);
+            this.modes = Arrays.asList(context.getResources().getStringArray(resId));
+        } finally {
+            typedArray.recycle();
         }
 
+        // Footprint of the switch
+        space = selectorUtil.getPixelsFromDips(6);
+        baseRadius = selectorUtil.getPixelsFromDips(16);
+        centerX = space + baseRadius;
+        centerY = space + baseRadius;
+        basePaint = selectorUtil.createPaintFromColor(Color.WHITE, Paint.Style.FILL, true, Color.LTGRAY);
+        setLayerType(LAYER_TYPE_SOFTWARE, basePaint);
 
+        // Setup the Dial.
+        selectorDial = new SelectorDial(selectorUtil, this.modes.size());
+        int selectorDialRadius = selectorDial.getDialRadius();
+        selectorDialRectF = new RectF(centerX - selectorDialRadius,
+                centerY - selectorDialRadius,
+                centerX + selectorDialRadius,
+                centerY + selectorDialRadius);
 
-    }
+        // Setup the Knob.
+        selectorKnob = new SelectorKnob(centerX, centerY, selectorUtil);
+        knobRotationAngle = 0.0f;
+        knobRotationMatrix = new Matrix();
+        knobPaint = selectorUtil.createPaintFromColor(Color.WHITE, Paint.Style.FILL, true,
+                Color.argb(255, 100, 100, 100));
+        setLayerType(LAYER_TYPE_SOFTWARE, knobPaint);
 
-    /**
-     * Initiates the selector for a normal size, where the properties are -
-     *
-     * modeCount = 3
-     * modeRadius = 16
-     * knobRadius = 4
-     * notchRadius = 1
-     * notchHandleLength = 3
-     * knob initial angle = 0
-     *
-     */
-    void initNormalMode() {
-
-        modeCount = 3;
-        modeSweepingAngle = getSweepingAngle(modeCount);
-        modeStartingAngles = getStartingAngles(modeCount, modeSweepingAngle);
-
-        // Set default 3 colors.
-        float[][] colors = {{29f, 23.1f, 94.9f}, {59f, 26.3f, 89.4f}, {129f, 21.7f, 77.6f}};
-        modeColors = new ArrayList<>(this.modeCount);
-        modeColors.add(Color.HSVToColor(colors[0]));
-        modeColors.add(Color.HSVToColor(colors[1]));
-        modeColors.add(Color.HSVToColor(colors[2]));
-        modePaints = getModePaints(modeCount, modeColors);
-
-        // Exclusive for Normal Mode Selector Switch.
-        modeRadius = getPixelsFromDips(16);
-        knobRadius = getPixelsFromDips(4);
-        notchRadius = getPixelsFromDips(1);
-        notchHandleLength = getPixelsFromDips(3);
-        knobPaint = createPaint(Color.WHITE, Paint.Style.FILL, true, Color.argb(255, 100, 100, 100));
-
-        // Draw the knob and the notch.
-        knobAndNotchPath = new Path();
-
-        // Central Knob.
-        knobAndNotchPath.addArc(centerX - knobRadius, centerY - knobRadius, centerX + knobRadius, centerY + knobRadius, 230, 260);
-
-        // The End Notch.
-        knobAndNotchPath.addArc(centerX - knobRadius - notchHandleLength - notchRadius, centerY - notchRadius,
-                centerX - knobRadius - notchHandleLength + notchRadius, centerY + notchRadius, 90, 180);
-
-        // The Handle between them.
-        knobAndNotchPath.moveTo(centerX - notchHandleLength + notchRadius / 2, centerY - knobRadius * 3 / 4);
-        knobAndNotchPath.lineTo(centerX - knobRadius - notchHandleLength, centerY - notchRadius);
-        knobAndNotchPath.lineTo(centerX - knobRadius - notchHandleLength, centerY + notchRadius);
-        knobAndNotchPath.lineTo(centerX - notchHandleLength + notchRadius / 2, centerY + knobRadius * 3 / 4);
-        knobAndNotchPath.close();
-
+        // Setup the initial state for the switch.
+        this.currentMode = 0;
         knobRotationMatrix = new Matrix();
         knobRotationMatrix.postRotate(0, centerX, centerY);
-        knobAndNotchPath.transform(knobRotationMatrix);
 
     }
+
+
+    /**
+     * Sets the structural properties of both the dial and the knob.
+     * <p>
+     * dialModeCount = 3
+     * dialRadius = 16
+     * knobRadius1 = 4
+     * knobRadius2 = 1
+     * knobLength = 3
+     * knob initial angle = 0
+     */
 
     /**
      * Calculate and set the dimensions of the view.
      *
-     * @param widthMeasureSpec
-     * @param heightMeasureSpec
+     * @param widthMeasureSpec  Width
+     * @param heightMeasureSpec Height
      */
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -177,101 +147,80 @@ public class SelectorSwitch extends View {
         // Draw the base with shadow.
         canvas.drawCircle(centerX, centerY, baseRadius, basePaint);
 
-        // Draw the dial with different colored modes.
-        for (int i = 0; i < modeCount; i++) {
-            canvas.drawArc(centerX - modeRadius, centerY - modeRadius, centerX + modeRadius, centerY + modeRadius,
-                    modeStartingAngles.get(i), modeSweepingAngle, true, modePaints.get(i));
+        // Draw the selector dial.
+        for (int mode = 0; mode < selectorDial.getDialModeCount(); mode++) {
+            canvas.drawArc(selectorDialRectF,
+                    selectorDial.getModeStartingAngle(mode),
+                    selectorDial.getModeSweepingAngle(),
+                    true, selectorDial.getDailPaintForMode(mode));
         }
 
         // Draw the knob and the notch.
-        canvas.drawPath(knobAndNotchPath, knobPaint);
+        canvas.drawPath(selectorKnob.getKnobPath(), knobPaint);
 
     }
 
 
-    /**
-     * Converts DIPs to Pixels.
-     *
-     * @param dps DIPs.
-     * @return pixels   Equivalent to the given DIPs.
-     */
-    private int getPixelsFromDips(int dps) {
-        float density = context.getTheme().getResources().getDisplayMetrics().density;
-        return (int) (density * dps / 0.5);
+    // Selector Dial Operations //
+
+    public SelectorDial getSelectorDial() {
+        return this.selectorDial;
     }
 
     /**
-     * Returns a Paint instance created as per the required specs.
+     * First computes a sequence of colors blending from the starting color to the ending color.
+     * Then updates the dial colors and paints and finally redraws the view after updating the
+     * colors and paints.
      *
-     * @param color         Color of the paint.
-     * @param style         Fill, Stroke, etc.
-     * @param shadowEnabled Enables shadow for anything using this paint.
-     * @param shadowColor   Color of the shadow if shadow is enabled.
-     * @return paint        Paint instance.
+     * @param startingColor Starting color for mode 0.
+     * @param endingColor   Ending color for mode (dialModeCount-1).
      */
-    private Paint createPaint(int color, Paint.Style style, boolean shadowEnabled, int shadowColor) {
-        Paint paint = new Paint();
-        paint.setColor(color);
-        paint.setStyle(style);
-        paint.setAntiAlias(true);
-        if (shadowEnabled) {
-            paint.setShadowLayer(shadowRadius, 0, 0, shadowColor);
-            setLayerType(LAYER_TYPE_SOFTWARE, paint);
+    public void setDialColors(int startingColor, int endingColor) {
+        selectorDial.setDialColors(startingColor, endingColor);
+        // Redraw
+    }
+
+    /**
+     * Update the color for an individual mode in the dial and redraw the view.
+     * Do nothing if the modeIndex is not valid.
+     *
+     * @param modeIndex Index of the mode in the dial.
+     * @param color     New color of the mode.
+     */
+    public void setColorForDialMode(int modeIndex, int color) {
+
+        if (modeIndex > selectorDial.getDialModeCount()) {
+            return;
         }
-        return paint;
+
+        selectorDial.setModeColor(modeIndex, color);
+
+        // Redraw the view.
+
     }
 
     /**
-     * Calculates the angle between two successive modes in the selector dial.
+     * Returns the list of colors for the modes in the dial.
      *
-     * @param maxModes Number of modes in the selector dial.
-     * @return sweepingAngle
+     * @return dialColors
      */
-    private Float getSweepingAngle(int maxModes) {
-        return (float) 360 / maxModes;
+    public List<Integer> getDialColors() {
+        return this.selectorDial.getDialColors();
     }
 
     /**
-     * Generates the starting angle for each mode position on the dial of the selector.
+     * Update the colors in the selector dial.
      *
-     * @param modeCount     Number of modes in the selector dial.
-     * @param sweepingAngle Angle between the starting angles of two
-     *                      successive modes on the dial.
-     * @return startingAngles   List of starting angles for each mode in the selector dial.
+     * @param dialColors List of colors.
      */
-    private List<Float> getStartingAngles(int modeCount, Float sweepingAngle) {
-        List<Float> startingAngles = new ArrayList<>(modeCount);
-        for (int i = 0; i < modeCount; i++) {
-            startingAngles.add(i * sweepingAngle);
-        }
-        return startingAngles;
+    public void setDialColors(@NonNull List<Integer> dialColors) {
+        selectorDial.setDialColors(dialColors);
+        // Redraw
     }
 
     /**
-     * Converts the mode Colors into Paints instances.
-     *
-     * @param modeCount Number of modes in the selector switch.
-     * @param colors    List of Color(integers).
-     * @return modePaints  List of Paint instances.
-     */
-    private List<Paint> getModePaints(int modeCount, List<Integer> colors) {
-        List<Paint> modePaints = new ArrayList<>(modeCount);
-        for (int i = 0; i < modeCount; i++) {
-            if (i < colors.size())
-                modePaints.add(createPaint(colors.get(i), Paint.Style.FILL, false, lightShadow));
-            else
-                modePaints.add(createPaint(Color.BLACK, Paint.Style.FILL, false, lightShadow));
-        }
-        return modePaints;
-    }
-
-
-    /**
-     * Updates the total number of modes in the selector switch.
-     * <p>
-     * Calls setModeColors after updating the count to assign default colors for the new modes.
-     * <p>
-     * Finally redraws the view.
+     * Updates the total number of modes in the selector switch and blends in the current starting
+     * and ending color to accommodate the new modes. Setting the dial colors redraws the views.
      *
      * @param count The new count of selectable modes in the switch (dial).
      * @throws IllegalSelectorException
@@ -286,49 +235,8 @@ public class SelectorSwitch extends View {
         }
 
         // Update the properties of the selector.
-        this.modeCount = count;
-        this.modeSweepingAngle = getSweepingAngle(count);
-        this.modeStartingAngles = getStartingAngles(count, this.modeSweepingAngle);
-
-        // Assign colors for new mode states.
-        setModeColors(this.modeColors);
-
-        // Redraw the view.
+        selectorDial.setDialModeCount(count);
     }
 
-    /**
-     * Sets the colors the each of the mode positions on the selector dial.
-     * <p>
-     * If the size of the list is more than the mode count, ignore the extra colors.
-     * If the size of the list is less than the mode cound, initialise the remaining
-     * colors as a default black.
-     * <p>
-     * Also update the modePaints list to use the new colors while drawing.
-     *
-     * @param modeColors List of colors.
-     */
-    public void setModeColors(@NonNull List<Integer> modeColors) {
-
-        if (modeColors.size() >= this.modeCount) {
-            this.modeColors = modeColors.subList(0, this.modeCount);
-        } else {
-            this.modeColors = modeColors;
-            for (int i = 0; i < this.modeCount - modeColors.size(); i++) {
-                this.modeColors.add(Color.BLACK);
-            }
-        }
-        this.modePaints = getModePaints(this.modeCount, this.modeColors);
-    }
-
-    /**
-     * Sets a sequence of colors blending from the starting color to the ending color.
-     *
-     * @param startingColor Starting color for mode 0.
-     * @param endingColor   Ending color for mode (modeCount-1).
-     */
-    public void setModeColors(@NonNull Color startingColor, @NonNull Color endingColor) {
-
-    }
-    
 }
 

@@ -12,13 +12,12 @@
     tools:context="adk.selectorswitch.MainActivity">
 
     <adk.selectorswitch.SelectorSwitch
-        android:scaleX="1"
-        android:scaleY="1"
-        android:layout_centerVertical="true"
-        android:layout_centerHorizontal="true"
+        android:id="@+id/selectorBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        sSwitch:mode="normal" />
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        sSwitch:modes="@array/modes" />
 
 
 </RelativeLayout>
