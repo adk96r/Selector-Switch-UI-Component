@@ -27,7 +27,7 @@ public class SelectorSwitch extends View {
     private static final List<String> DEFAULT_MODES =
             Arrays.asList(new String[]{"LOW", "MID", "HIGH"});
 
-    private static final float STEP_ANGLE = 1;
+    private static final float STEP_ANGLE = 1.0f;
 
 
     Context context;
@@ -353,24 +353,9 @@ public class SelectorSwitch extends View {
     }
 
     private void animateKnob(final float startingAngle, final float endingAngle) {
-        /*
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for (float angle = startingAngle; angle < endingAngle; angle += STEP_ANGLE) {
-                    synchronized (this) {
-                        selectorKnob.rotateBy(STEP_ANGLE);
-                        try {
-                            wait(100);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        invalidate();
-                    }
-                }
-            }
-        }).start();
-        */
+
+        new SelectorKnobAnimator(this, selectorKnob, startingAngle, endingAngle, STEP_ANGLE).execute();
+
     }
 
 }

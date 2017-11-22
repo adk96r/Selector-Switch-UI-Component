@@ -47,8 +47,8 @@ class SelectorUtil {
      */
     static List<Float> generateStartingAngles(int dialModeCount, Float sweepingAngle) {
         List<Float> startingAngles = new ArrayList<>(dialModeCount);
-        for (int i = 0; i < dialModeCount; i++) {
-            startingAngles.add((i * sweepingAngle) + 180);
+        for (int i = 1; i <= dialModeCount; i++) {
+            startingAngles.add((i * sweepingAngle));
         }
         return startingAngles;
     }
