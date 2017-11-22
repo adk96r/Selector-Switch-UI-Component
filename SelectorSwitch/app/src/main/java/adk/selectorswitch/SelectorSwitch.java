@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.support.annotation.NonNull;
@@ -28,6 +27,8 @@ public class SelectorSwitch extends View {
     private static final List<String> DEFAULT_MODES =
             Arrays.asList(new String[]{"LOW", "MID", "HIGH"});
 
+    private static final float STEP_ANGLE = 1;
+
 
     Context context;
     float screenDensity;
@@ -42,6 +43,9 @@ public class SelectorSwitch extends View {
     private int space;
     private int centerX;
     private int centerY;
+    private List<String> modes;
+    private int currentMode;
+    private int maxModes;
 
     // Base Properties
     private int baseRadius;
@@ -54,13 +58,8 @@ public class SelectorSwitch extends View {
 
     // Knob Properties.
     private SelectorKnob selectorKnob;
-    private Matrix knobRotationMatrix;
-    private float knobRotationAngle;
     private Paint knobPaint;
-
-    // Current state of the switch
-    private List<String> modes;
-    private int currentMode;
+    private float knobSweepAngle;
 
     /**
      * Initialises the selector switch components.
@@ -95,8 +94,8 @@ public class SelectorSwitch extends View {
 
     /**
      * Initialises the modes and colors for each mode from the resource references in the
-     * component's XML code from the layout files. If no modes or colors are specified default
-     * values are used for both.
+     * component's XML code from the layout files. Unless both the modes and colors are
+     * specified default values will be used.
      * <p>
      * Throws an illegal selector exception if there isn't a color for each mode.
      *
@@ -105,28 +104,34 @@ public class SelectorSwitch extends View {
      */
     private void initModesAndColors(AttributeSet attrs) throws IllegalSelectorException {
 
-        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.SelectorSwitch);
-        int resId;
-
         this.modes = DEFAULT_MODES;
         this.selectorDialColors = DEFAULT_DIAL_COLORS;
+        this.currentMode = 0;
+        this.maxModes = modes.size();
+
+        int refColors;
+        int refModes;
+        TypedArray xmlCode = context.obtainStyledAttributes(attrs, R.styleable.SelectorSwitch);
 
         if (attrs == null)
             return;
 
         try {
-            // First get the modes in the dial.
-            resId = typedArray.getResourceId(R.styleable.SelectorSwitch_modes, 0);
-            if (resId != 0)
-                this.modes = Arrays.asList(context.getResources().getStringArray(resId));
 
-            // Next get the colors for each mode in the dial.
-            resId = typedArray.getResourceId(R.styleable.SelectorSwitch_dialColors, 0);
-            if (resId != 0)
-                this.selectorDialColors = context.getResources().getIntArray(resId);
+            // Check if any reference to XML having the modes and their colors
+            // has been provided in the component's layout xml.
+            refColors = xmlCode.getResourceId(R.styleable.SelectorSwitch_colors, 0);
+            refModes = xmlCode.getResourceId(R.styleable.SelectorSwitch_modes, 0);
+
+            // Not provided
+            if (refColors == 0 || refModes == 0) return;
+
+            this.modes = Arrays.asList(context.getResources().getStringArray(refModes));
+            this.maxModes = modes.size();
+            this.selectorDialColors = context.getResources().getIntArray(refColors);
 
         } finally {
-            typedArray.recycle();
+            xmlCode.recycle();
         }
 
         // Check if every mode has a color.
@@ -148,23 +153,28 @@ public class SelectorSwitch extends View {
      */
     private void initComponents() throws IllegalSelectorException {
 
-        // First the footprint of the component.
+        // First, the initial state of the selector switch.
+        this.currentMode = 0;
+        this.maxModes = this.modes.size();
+
+        // Then the footprint of the component.
         space = SelectorUtil.getPixelsFromDips(SPACE_DIP, screenDensity);
         baseRadius = SelectorUtil.getPixelsFromDips(BASE_RADIUS_DIP, screenDensity);
         centerX = space + baseRadius;
         centerY = space + baseRadius;
 
-
         // Next, the dial.
         selectorDial = new SelectorDial(context, this.modes.size(), selectorDialColors);
+        selectorDial.setDialColors(SelectorUtil.arrayToList(selectorDialColors));
         int selectorDialRadius = selectorDial.getDialRadius();
         selectorDialRectF = new RectF(centerX - selectorDialRadius,
                 centerY - selectorDialRadius,
                 centerX + selectorDialRadius,
                 centerY + selectorDialRadius);
 
-        // Then, the knob.
+        // After that the knob.
         selectorKnob = new SelectorKnob(context, centerX, centerY);
+        knobSweepAngle = SelectorUtil.getSweepingAngle(maxModes);
 
         // Now the paints.
         basePaint = SelectorUtil.createPaintFromColor(Color.WHITE, Paint.Style.FILL, true,
@@ -175,12 +185,7 @@ public class SelectorSwitch extends View {
                 KNOB_SHADOW_COLOR, SelectorUtil.getPixelsFromDips(KNOB_SHADOW_RADIUS, screenDensity));
         setLayerType(LAYER_TYPE_SOFTWARE, knobPaint);
 
-        // Finally, the initial state of the selector switch.
-        this.currentMode = 0;
-        this.knobRotationAngle = 0.0f;
-        this.knobRotationMatrix = new Matrix();
-        this.knobRotationMatrix.postRotate(0, centerX, centerY);
-
+        // Done!
     }
 
 
@@ -230,7 +235,6 @@ public class SelectorSwitch extends View {
 
         // Draw the knob and the notch.
         canvas.drawPath(selectorKnob.getKnobPath(), knobPaint);
-
     }
 
     public SelectorDial getSelectorDial() {
@@ -306,6 +310,67 @@ public class SelectorSwitch extends View {
 
         // Update the properties of the selector.
         selectorDial.setDialModeCount(count);
+    }
+
+
+    /**
+     * Selects the specified mode in the switch and rotates the knob to point to
+     * the specified mode.
+     *
+     * @param newMode New mode to select.
+     */
+    public void selectMode(int newMode) {
+
+        newMode = newMode % maxModes;
+        float currentAngle = currentMode * knobSweepAngle;
+        float newAngle = newMode * knobSweepAngle;
+        if (newAngle == 0) newAngle = 360;
+
+        //selectorKnob.rotateBy(newAngle - currentAngle);
+        animateKnob(currentAngle, newAngle);
+        this.currentMode = newMode;
+        invalidate();
+
+    }
+
+    /**
+     * Returns the mode the switch is currently in.
+     *
+     * @return
+     */
+    public int getCurrentMode() {
+        return this.currentMode;
+    }
+
+    /**
+     * Returns the name of the mode at the specified index.
+     *
+     * @param index Index of the mode.
+     * @return string Name of the mode at the index.
+     */
+    public String getCurrentModeName(int index) {
+        return modes.get(index);
+    }
+
+    private void animateKnob(final float startingAngle, final float endingAngle) {
+        /*
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (float angle = startingAngle; angle < endingAngle; angle += STEP_ANGLE) {
+                    synchronized (this) {
+                        selectorKnob.rotateBy(STEP_ANGLE);
+                        try {
+                            wait(100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        invalidate();
+                    }
+                }
+            }
+        }).start();
+        */
     }
 
 }

@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <string-array name="modes">
-        <item name="low">Low</item>
-        <item name="medium">Medium</item>
-        <item name="high">High</item>
+        <item>Low</item>
+        <item>Mid</item>
+        <item>Supa</item>
     </string-array>
-    
-    <integer-array name="dialColors">
-        <item>@color/colorAccent</item>
-        <item>@color/colorPrimary</item>
+
+    <array name="colors">
+        <item>@color/reallyLowColor</item>
         <item>@color/colorPrimaryDark</item>
-    </integer-array>
+        <item>@color/supaHighColor</item>
+    </array>
+
 </resources>

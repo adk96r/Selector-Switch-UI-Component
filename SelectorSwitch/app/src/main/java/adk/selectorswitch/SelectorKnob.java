@@ -22,20 +22,11 @@ class SelectorKnob {
     private float screenDensity;
     private Path knobPath;
     private int centerX, centerY;
+    private float currentAngle;
+    private Matrix rotationMatrix;
 
     /**
-     * Initialises the knob based on another path.
-     *
-     * @param context  Context to get the density of the screen.
-     * @param knobPath Path of a knob.
-     */
-    public SelectorKnob(Context context, Path knobPath) {
-        this.knobPath = knobPath;
-        this.screenDensity = context.getTheme().getResources().getDisplayMetrics().density;
-    }
-
-    /**
-     * Initialises the knob based on default values.
+     * Initialises the knob's properties based on default values.
      *
      * @param context Context to get the density of the screen.
      * @param centerX Horizontal center of the knob.
@@ -45,6 +36,9 @@ class SelectorKnob {
         this.centerX = centerX;
         this.centerY = centerY;
         this.screenDensity = context.getTheme().getResources().getDisplayMetrics().density;
+        this.currentAngle = 0;
+        this.rotationMatrix = new Matrix();
+        rotationMatrix.postRotate(0, centerX, centerY);
         initiateKnob();
     }
 
@@ -82,7 +76,6 @@ class SelectorKnob {
         knobPath.lineTo(centerX - knobRadius1 - knobLength, centerY + knobRadius2);
         knobPath.lineTo(centerX - knobLength + knobRadius2 / 2, centerY + knobRadius1 * 3 / 4);
         knobPath.close();
-
     }
 
     /**
@@ -90,18 +83,28 @@ class SelectorKnob {
      *
      * @return knobPath
      */
-    Path getKnobPath() {
+    public Path getKnobPath() {
         return this.knobPath;
     }
 
     /**
-     * Applies a rotation transformation to the knob's path
-     * to rotate it.
+     * Rotates the knob by a specified angle and also updates the current angle.
      *
-     * @param rotationMatrix Transformation matrix.
+     * @param delta Angle to rotate the knob by.
      */
-    public void rotateKnob(Matrix rotationMatrix) {
+    public void rotateBy(float delta) {
+        this.currentAngle = (currentAngle + delta) % 360;
+        this.rotationMatrix.setRotate(delta, centerX, centerY);
         this.knobPath.transform(rotationMatrix);
+    }
+
+    /**
+     * Returns the angle the knob is currently at.
+     *
+     * @return currentMode
+     */
+    public float getRotation() {
+        return this.currentAngle;
     }
 
 

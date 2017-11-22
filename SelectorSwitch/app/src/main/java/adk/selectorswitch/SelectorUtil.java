@@ -48,9 +48,26 @@ class SelectorUtil {
     static List<Float> generateStartingAngles(int dialModeCount, Float sweepingAngle) {
         List<Float> startingAngles = new ArrayList<>(dialModeCount);
         for (int i = 0; i < dialModeCount; i++) {
-            startingAngles.add(i * sweepingAngle);
+            startingAngles.add((i * sweepingAngle) + 180);
         }
         return startingAngles;
+    }
+
+    /**
+     * Returns the possible positions (angles) that the knob can exist in when pointing
+     * to the modes in the dial.
+     *
+     * @param dialStartingAngles List of starting angles for each mode in the dial.
+     * @return knobPositions     List of angles for the knob.
+     */
+    static List<Float> generateKnobPositions(List<Float> dialStartingAngles) {
+
+        int size = dialStartingAngles.size();
+        List<Float> knobPositions = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            knobPositions.add((dialStartingAngles.get(i) + dialStartingAngles.get((i + 1) % size) - 360) / 2);
+        }
+        return knobPositions;
     }
 
     /**

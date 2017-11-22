@@ -2,6 +2,6 @@
 <resources>
     <declare-styleable name="SelectorSwitch">
         <attr name="modes" format="reference" />
-        <attr name="dialColors" format="reference" />
+        <attr name="colors" format="reference" />
     </declare-styleable>
 </resources>
