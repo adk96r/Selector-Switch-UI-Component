@@ -3,8 +3,8 @@ package adk.selectorswitch;
 import android.os.AsyncTask;
 
 /**
- * SelectorKnobAnimator is built on top of
- * <a href="https://developer.android.com/reference/android/os/AsyncTask.html"AsyncTask</a>
+ * SelectorKnobAnimator is built on top of {@link
+ * <a href="https://developer.android.com/reference/android/os/AsyncTask.html">AsyncTask</a>}
  * and is used primarily by {@link SelectorSwitch} to animate the rotation of its knob when
  * the mode of the switch is changed.
  *
