@@ -2,15 +2,15 @@
 <resources>
 
     <string-array name="modes">
+        <item>REALLY LOW</item>
         <item>Low</item>
         <item>Mid</item>
-        <item>Supa</item>
     </string-array>
 
     <array name="colors">
+        <item>@color/colorPrimary</item>
         <item>@color/reallyLowColor</item>
-        <item>@color/colorPrimaryDark</item>
-        <item>@color/supaHighColor</item>
+        <item>@color/colorAccent</item>
     </array>
 
 </resources>

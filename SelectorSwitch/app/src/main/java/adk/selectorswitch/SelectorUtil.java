@@ -1,6 +1,5 @@
 package adk.selectorswitch;
 
-import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Paint;
 
@@ -8,30 +7,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Cooked by ADK96r on 21 Nov '17.
+ * SelectorUtil is a utility helper class used mainly by {@link SelectorDial} and
+ * {@link SelectorKnob} classes. It offers a range of useful static methods that
+ * either transform data from one form to another or return objects constructed
+ * using some given data.
+ *
+ * @see SelectorSwitch
+ * @see SelectorDial
+ * @see SelectorKnob
  */
 
 class SelectorUtil {
 
-    private Context context;
-
-    SelectorUtil(Context context) {
-        this.context = context;
-    }
-
+    /**
+     * Converts an <tt>int[]</tt> to a <tt>List<Integer></tt> and returns it.
+     *
+     * @param array <tt>int[]</tt> : array to be converted.
+     * @return list List<Integer> constructed from array.
+     */
     static List<Integer> arrayToList(int[] array) {
         List<Integer> list = new ArrayList<>(array.length);
         for (int anArray : array) {
             list.add(anArray);
         }
+
         return list;
     }
 
     /**
-     * Calculates the angle between two successive modes in the selector dial.
+     * Calculates the angle between two successive modes in the selector dial. Every mode
+     * in the circular dial is separated equally.
      *
-     * @param maxModes Number of modes in the selector dial.
-     * @return sweepingAngle
+     * @param maxModes <tt>int</tt> : Number of modes in the selector dial.
+     * @return sweepingAngle The angle between 2 adjacent modes.
      */
     static float getSweepingAngle(int maxModes) {
         return (float) 360 / maxModes;
@@ -40,12 +48,12 @@ class SelectorUtil {
     /**
      * Generates the starting angle for each mode on the dial of the selector.
      *
-     * @param dialModeCount Number of modes in the selector dial.
-     * @param sweepingAngle Angle between the starting angles of two
+     * @param dialModeCount <tt>int</tt> : Number of modes in the selector dial.
+     * @param sweepingAngle <tt>float</tt> : Angle between the starting angles of two
      *                      successive modes on the dial.
      * @return startingAngles   List of starting angles for each mode in the selector dial.
      */
-    static List<Float> generateStartingAngles(int dialModeCount, Float sweepingAngle) {
+    static List<Float> generateStartingAngles(int dialModeCount, float sweepingAngle) {
         List<Float> startingAngles = new ArrayList<>(dialModeCount);
         for (int i = 1; i <= dialModeCount; i++) {
             startingAngles.add((i * sweepingAngle));
@@ -54,28 +62,12 @@ class SelectorUtil {
     }
 
     /**
-     * Returns the possible positions (angles) that the knob can exist in when pointing
-     * to the modes in the dial.
-     *
-     * @param dialStartingAngles List of starting angles for each mode in the dial.
-     * @return knobPositions     List of angles for the knob.
-     */
-    static List<Float> generateKnobPositions(List<Float> dialStartingAngles) {
-
-        int size = dialStartingAngles.size();
-        List<Float> knobPositions = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) {
-            knobPositions.add((dialStartingAngles.get(i) + dialStartingAngles.get((i + 1) % size) - 360) / 2);
-        }
-        return knobPositions;
-    }
-
-    /**
      * Generates a list of paint instances based on the mode colors (ints).
      *
-     * @param dialModeCount Number of modes in the selector switch.
-     * @param colors        List of Color(integers).
+     * @param dialModeCount <tt>int</tt> : Number of modes in the selector switch.
+     * @param colors        <tt>List<Integer></tt> : List of Color(integers).
      * @return dialPaints  List of Paint instances.
+     * @see #createPaintFromColor(int, Paint.Style, boolean, int, int)
      */
     static List<Paint> generateDialPaints(int dialModeCount, List<Integer> colors) {
         List<Paint> dialPaints = new ArrayList<>(dialModeCount);
@@ -89,12 +81,28 @@ class SelectorUtil {
     }
 
     /**
-     * Generates a list of colors that blend from a starting color to an ending color.
+     * Generates and returns a single paint object, having the given color, used to draw
+     * modes in the selector dial. This paint has {@link android.graphics.Paint.Style#FILL}
+     * style with no shadow enabled.
      *
-     * @param dialModeCount Size of the list.
-     * @param startingColor Color to start blending from.
-     * @param endingColor   Color to finally blend into.
-     * @return colorList
+     * @param color <tt>int</tt> : Color of the mode.
+     * @return paint Paint instance built using the given color.
+     * @see SelectorDial#setModeColor(int, int)
+     * @see #createPaintFromColor(int, Paint.Style, boolean, int, int)
+     */
+    static Paint generateDialPaint(int color) {
+        return createPaintFromColor(color, Paint.Style.FILL, false, 0, 0);
+    }
+
+    /**
+     * Generates a list of colors that blend from a starting color to an ending color. The
+     * size of the list is same as dialModeCount.
+     *
+     * @param dialModeCount <tt>int</tt> : Size of the list.
+     * @param startingColor <tt>int</tt> : Color to start blending from.
+     * @param endingColor   <tt>int</tt> : Color to finally blend into.
+     * @return colorList    List of Integers representing the blended colors.
+     * @see Color#HSVToColor(float[])
      */
     static List<Integer> generateBlendingColors(int dialModeCount, int startingColor, int endingColor) {
 
@@ -124,8 +132,8 @@ class SelectorUtil {
     /**
      * Converts DPs to Pixels based on the screen's pixel density.
      *
-     * @param dps DPs.
-     * @return pixels   Pixel count equivalent to the given DP value.
+     * @param dps <tt>int</tt> : DP units.
+     * @return pixels   Pixel count equivalent to the given DP units.
      */
     static int getPixelsFromDips(int dps, float density) {
         return (int) (density * dps / 0.5);
@@ -134,12 +142,14 @@ class SelectorUtil {
     /**
      * Returns a paint instance created as per the required specs.
      *
-     * @param color         Color of the paint.
-     * @param style         Fill, Stroke, etc.
-     * @param shadowEnabled Enables shadow for the objects using this paint.
-     * @param shadowColor   Color of the shadow if the shadow is enabled.
-     * @param shadowLength  Length of the shadow in pixels.
+     * @param color         <tt>int</tt> : Color of the paint.
+     * @param style         <tt>Paint.Style></tt> : Style of the paint. Eg - Fill, Stroke, etc.
+     * @param shadowEnabled <tt>boolean</tt> : Enables shadow for the objects using this paint if
+     *                      true.
+     * @param shadowColor   <tt>int</tt> : Color of the shadow if the shadow is enabled.
+     * @param shadowLength  <tt>int</tt> : Length of the shadow in pixels.
      * @return paint        Paint instance created.
+     * @see <a href="https://developer.android.com/reference/android/graphics/Paint.Style.html">Paint.Style</a>
      */
     static Paint createPaintFromColor(int color, Paint.Style style, boolean shadowEnabled,
                                       int shadowColor, int shadowLength) {
@@ -153,6 +163,4 @@ class SelectorUtil {
         }
         return paint;
     }
-
-
 }

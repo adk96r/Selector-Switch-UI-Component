@@ -1,26 +1,81 @@
 package adk.selectorswitch;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Path;
 
 
 /**
- * Cooked by ADK96r on 21 Nov '17.
+ * SelectorKnob describes the knob used in the selector switch and has the structure shown
+ * {@link <a href="https://www.github.com/adk96r/Selector-Switch-UI-Component/">here</a>}.
+ * <p>
+ * As specified in the diagram, the knob has a set of values that define its structure in form
+ * of a path. This path is drawn on the selector switch's canvas when the selector switch is
+ * rendered. The selector knob also stores a rotation transformation matrix which is used to
+ * rotate it every time the selector switch's mode is changed, as the knob has to point to the
+ * correct mode upon the change.
+ *
+ * @see SelectorSwitch
  */
 
 class SelectorKnob {
 
+    /**
+     * Knob has a central radius of {@value knobRadius1DIP} DP units.
+     */
     private final static int knobRadius1DIP = 4;
+
+    /**
+     * Knob has an outer radius of {@value knobRadius2DIP} DP units.
+     */
     private final static int knobRadius2DIP = 1;
+
+    /**
+     * Knob has a handle length of {@value knobLengthDIP} DP units.
+     */
     private final static int knobLengthDIP = 3;
+
+    /**
+     * Knob has a central starting angle of {@value knobCentralStartingAngle} degrees.
+     */
     private final static int knobCentralStartingAngle = 230;
+
+    /**
+     * Knob has a central sweeping angle of {@value knobCentralSweepingAngle} degrees.
+     */
     private final static int knobCentralSweepingAngle = 260;
+
+    /**
+     * Knob has a notch starting angle of {@value notchStartingAngle} degrees.
+     */
     private final static int notchStartingAngle = 90;
+
+    /**
+     * Knob has a notch sweeping angle of {@value notchSweepingAngle} degrees.
+     */
     private final static int notchSweepingAngle = 180;
 
+    /**
+     * Stores the density of the screen for converting DPs into pixels.
+     *
+     * @see SelectorUtil#getPixelsFromDips(int, float)
+     */
     private float screenDensity;
+
+    /**
+     * Stores the complete structure of the knob and is drawn onto the canvas
+     * when the switch is rendered.
+     *
+     * @see SelectorSwitch#onDraw(Canvas)
+     */
     private Path knobPath;
+
+    /**
+     * Stores the X and Y coordinates of the point about which the knob is rotated.
+     * <p>
+     * Note: This point is not the center of the knob!
+     */
     private int centerX, centerY;
     private float currentAngle;
     private Matrix rotationMatrix;
@@ -28,9 +83,11 @@ class SelectorKnob {
     /**
      * Initialises the knob's properties based on default values.
      *
-     * @param context Context to get the density of the screen.
-     * @param centerX Horizontal center of the knob.
-     * @param centerY Vertical center of the knob.
+     * @param context <tt>Context</tt> A context to get the density of the screen.
+     * @param centerX <tt>int</tt> : The X coordinate of the point about which the knob
+     *                would rotate.
+     * @param centerY <tt>int</tt> : The Y coordinate of the point about which the knob
+     *                would rotate.
      */
     SelectorKnob(Context context, int centerX, int centerY) {
         this.centerX = centerX;
@@ -43,8 +100,10 @@ class SelectorKnob {
     }
 
     /**
-     * Sets the dimensions and completely defines the knob path
-     * which can be drawn on a canvas later.
+     * Sets the default dimensions and constructs the path which can be used later while
+     * drawing the switch.
+     *
+     * @see SelectorSwitch#onDraw(Canvas)
      */
     private void initiateKnob() {
 
@@ -79,18 +138,19 @@ class SelectorKnob {
     }
 
     /**
-     * Returns the knob's path for drawing purposes.
+     * Returns the path of the knob.
      *
-     * @return knobPath
+     * @return {@link #knobPath}
      */
     public Path getKnobPath() {
         return this.knobPath;
     }
 
     /**
-     * Rotates the knob by a specified angle and also updates the current angle.
+     * Rotates the knob by a specified angle about the point whose coordinates are
+     * {@link #centerX} and {@link #centerY}.
      *
-     * @param delta Angle to rotate the knob by.
+     * @param delta <tt>float</tt> : The angle to rotate the knob by.
      */
     public void rotateBy(float delta) {
         this.currentAngle = (currentAngle + delta) % 360;
@@ -99,9 +159,9 @@ class SelectorKnob {
     }
 
     /**
-     * Returns the angle the knob is currently at.
+     * Returns the current angle the knob is at.
      *
-     * @return currentMode
+     * @return {@link #currentAngle}
      */
     public float getRotation() {
         return this.currentAngle;

@@ -1,9 +1,13 @@
 package adk.selectorswitch;
 
 /**
- * Created by Adu on 11/20/2017.
+ * IllegalSelectorException is built on top of {@link Exception} to offer
+ * basic exception handling to the SelectorSwitch UI Component.
+ *
+ * @see SelectorSwitch
+ * @see SelectorDial
+ * @see SelectorKnob
  */
-
 public class IllegalSelectorException extends Exception {
 
     public IllegalSelectorException() {
