@@ -86,23 +86,25 @@ Now let's add a switch to the layout and *link the modes and colors* ,that we cr
 
 # <a name="structure">Structure of the switch</a>
 
-The structure will be added soon.
+You might want to zoom into the this a bit!
+<br>
+<img src="https://github.com/adk96r/Selector-Switch-UI-Component/blob/master/Switch%20PNGs/Artboard%206.png">
 <br>
 <br>
 
 # <a name="know_more">A few things about the inner workings</a>
 
-This section will be added soon.
+This section will be added soon. Until then you can refer to the [docs](https://github.com/adk96r/Selector-Switch-UI-Component/tree/master/Docs).
 <br>
 <br>
 
 # <a name="build">Contribute!</a>
 
-This details will be added soon.
+You can check out these [issues](https://github.com/adk96r/Selector-Switch-UI-Component/issues) and help me solve them. Thanks in advance!
 <br>
 <br>
 
-I hope you like this and find it useful for your projects. Cheers!
+I hope you like and find this little thing I made useful for your projects. Cheers!
 <br>
 <br>
  ADK<br>
