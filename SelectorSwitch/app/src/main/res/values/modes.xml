@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <string-array name="modes">
+    <array name="modes">
         <item>REALLY LOW</item>
         <item>Low</item>
         <item>Mid</item>
-    </string-array>
+    </array>
 
     <array name="colors">
         <item>@color/colorPrimary</item>
         <item>@color/reallyLowColor</item>
         <item>@color/colorAccent</item>
     </array>
-
 </resources>

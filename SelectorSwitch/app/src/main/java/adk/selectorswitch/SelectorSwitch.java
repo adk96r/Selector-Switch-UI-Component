@@ -24,9 +24,9 @@ import java.util.List;
  * can choose to have anywhere from one to eight modes in the switch's dial and each mode has to
  * have a name and a colour.
  * <p>
- * The names and colors for the modes can be provided in form of string-array and array resources
- * respectively. These resources are then linked to the switch's XML code in the layout file via
- * the :modes and the :colors attributes respectively.
+ * The names and colors for the modes can be provided in form two array resources. These resources
+ * are then linked to the switch's XML code in the layout file via the :modes and the :colors
+ * attributes respectively.
  * <p>
  * If no modes or colors are specified, or if only either one of them is specified, or if both of
  * them are specified but their lengths are unequal the SelectorSwitch will use the default modes
