@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <array name="modes">
-        <item>REALLY LOW</item>
+        <item>Really Low</item>
         <item>Low</item>
         <item>Mid</item>
+        <item>High</item>
+        <item>Really High</item>
     </array>
 
     <array name="colors">
-        <item>@color/colorPrimary</item>
         <item>@color/reallyLowColor</item>
+        <item>@color/colorPrimary</item>
+        <item>@color/supaHighColor</item>
         <item>@color/colorAccent</item>
+        <item>@color/colorPrimaryDark</item>
     </array>
 </resources>

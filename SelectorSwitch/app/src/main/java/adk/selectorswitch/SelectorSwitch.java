@@ -11,6 +11,7 @@ import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -50,9 +51,20 @@ public class SelectorSwitch extends View {
             Arrays.asList("LOW", "MID", "HIGH");
 
     /**
+     * The default mode is 0.
+     */
+    private static final int DEFAULT_MODE = 0;
+
+    /**
      * The default step angle used while animating the rotation of the selector knob.
      */
-    private static final float STEP_ANGLE = 0.25f;
+    private static final float STEP_ANGLE = 0.1f;
+
+
+    /**
+     * The default delay, in nanoseconds, between successive increments in knob rotation.
+     */
+    private static final int STEP_WAIT_NANOS = 400;
 
     /**
      * The default space in DP Units used as an additional padding on top of the
@@ -68,7 +80,7 @@ public class SelectorSwitch extends View {
     /**
      * The default shadow radius of the switch's base in DP Units.
      */
-    private static final int BASE_SHADOW_RADIUS = 2;
+    private static final int BASE_SHADOW_RADIUS = 1;
 
     /**
      * The default shadow radius of the knob's base in DP Units.
@@ -83,7 +95,40 @@ public class SelectorSwitch extends View {
     /**
      * The default color of the knob's shadow.
      */
-    private static final int KNOB_SHADOW_COLOR = Color.LTGRAY;
+    private static final int KNOB_SHADOW_COLOR = Color.DKGRAY;
+
+    /**
+     * The default top and bottom margin of the
+     * mode's base in DP units.
+     */
+    private static final int MODE_BASE_MARGIN_DP = 4;
+
+    /**
+     * The default top and bottom padding for
+     * the mode's base in DP units.
+     */
+    private static final int MODE_BASE_PADDING_V_DP = 2;
+
+    /**
+     * The default left and right padding for
+     * the mode's base in DP units.
+     */
+    private static final int MODE_BASE_PADDING_H_DP = 4;
+
+    /**
+     * The default height of the mode's base in DP units.
+     */
+    private static final int MODE_BASE_HEIGHT_DP = 8;
+
+    /**
+     * The default text size for the mode's name.
+     */
+    private static final int MODE_TEXT_SIZE = 6;
+
+    /**
+     * The default text color for the mode's name.
+     */
+    private static final int MODE_TEXT_COLOR = Color.BLACK;
 
     /**
      * Stores a context to get the screen's density for conversion of DP
@@ -132,7 +177,6 @@ public class SelectorSwitch extends View {
     private int totalModes;
 
     /* Base Properties */
-
     /**
      * Stores the radius of the switch's base in pixels.
      */
@@ -144,7 +188,6 @@ public class SelectorSwitch extends View {
     private Paint basePaint;
 
     /* Dial Properties. */
-
     /**
      * Stores the selector dial used in the selector switch. This has all the data
      * associated with the dial.
@@ -186,6 +229,54 @@ public class SelectorSwitch extends View {
      * the switch.
      */
     private float knobSweepAngle;
+
+    /**
+     * Stores the boundaries of the mode base.
+     */
+    private RectF modeBaseRectF;
+
+    /**
+     * Stores the Paint used to draw the mode's base.
+     */
+    private Paint modeBasePaint;
+
+    /**
+     * Stores the top & bottom padding of the mode's base in pixels.
+     */
+    private int modeBasePaddingV;
+
+    /**
+     * Stores the height of the mode's base in pixels.
+     */
+    private int modeBaseHeight;
+
+    /**
+     * Stores the mode base's left coordinates for the various
+     * modes.
+     */
+    private List<Float> modeBaseLefts;
+
+    /**
+     * Stores the mode base's right coordinates for the various
+     * modes.
+     */
+    private List<Float> modeBaseRights;
+
+    /**
+     * Stores the top coordinate of the mode name's base.
+     */
+    private float modeNameTop;
+
+    /**
+     * Stores the left coordinates of the mode names when drawn on
+     * the canvas.
+     */
+    private List<Float> modeNameLefts;
+
+    /**
+     * Paint used to write the name of the mode onto the canvas.
+     */
+    private Paint modeNamePaint;
 
     /**
      * Initialises all the parameters of the selector switch. First obtains a screen density
@@ -295,7 +386,7 @@ public class SelectorSwitch extends View {
     private void initComponents() throws IllegalSelectorException {
 
         // First, the initial state of the selector switch.
-        this.currentMode = 0;
+        this.currentMode = DEFAULT_MODE;
         this.totalModes = this.modes.size();
 
         // Then the footprint of the component.
@@ -325,7 +416,37 @@ public class SelectorSwitch extends View {
         knobPaint = SelectorUtil.createPaintFromColor(Color.WHITE, Paint.Style.FILL, true,
                 KNOB_SHADOW_COLOR, SelectorUtil.getPixelsFromDips(KNOB_SHADOW_RADIUS, screenDensity));
         setLayerType(LAYER_TYPE_SOFTWARE, knobPaint);
-        // Done!
+
+        // Next, the mode base.
+
+        int modeBaseMargin = SelectorUtil.getPixelsFromDips(MODE_BASE_MARGIN_DP, screenDensity);
+        modeBasePaddingV = SelectorUtil.getPixelsFromDips(MODE_BASE_PADDING_V_DP, screenDensity);
+
+        int modeBasePaddingH = SelectorUtil.getPixelsFromDips(MODE_BASE_PADDING_H_DP, screenDensity);
+        modeBaseLefts = new ArrayList<>(totalModes);
+        modeBaseRights = new ArrayList<>(totalModes);
+        modeBaseHeight = SelectorUtil.getPixelsFromDips(MODE_BASE_HEIGHT_DP, screenDensity);
+        modeBaseRectF = new RectF(0, centerY + baseRadius + modeBaseMargin,
+                0, centerY + baseRadius + modeBaseMargin + modeBaseHeight);
+        modeBasePaint = SelectorUtil.createPaintFromColor(Color.WHITE, Paint.Style.FILL, true,
+                BASE_SHADOW_COLOR, SelectorUtil.getPixelsFromDips(BASE_SHADOW_RADIUS, screenDensity));
+
+
+        // Finally the mode's name's properties.
+        modeNameTop = modeBaseRectF.top + modeBasePaddingV + modeBaseHeight / 2;
+
+        modeNamePaint = SelectorUtil.createPaintFromColor(MODE_TEXT_COLOR, Paint.Style.FILL,
+                false, 0, 0);
+        modeNamePaint.setTextSize(SelectorUtil.getPixelsFromDips(MODE_TEXT_SIZE, screenDensity));
+
+        modeNameLefts = new ArrayList<>(totalModes);
+        Float wid;
+        for (String mode : modes) {
+            wid = modeNamePaint.measureText(mode) / 2;
+            modeBaseLefts.add(centerX - wid - modeBasePaddingH);
+            modeBaseRights.add(centerX + wid + modeBasePaddingH);
+            modeNameLefts.add(centerX - wid);
+        }
     }
 
 
@@ -349,8 +470,9 @@ public class SelectorSwitch extends View {
         int paddingBottom = getPaddingBottom();
         int paddingLeft = getPaddingLeft();
 
-        width += space + paddingLeft + (2 * baseRadius) + paddingRight + space;
-        height += space + paddingTop + (2 * baseRadius) + paddingBottom + space;
+        width += paddingLeft + space + (2 * baseRadius) + space + paddingRight;
+        height += paddingTop + space + (2 * baseRadius) +
+                modeBasePaddingV + modeBaseHeight + modeBasePaddingV + space + paddingBottom;
 
         setMeasuredDimension(width, height);
     }
@@ -380,6 +502,16 @@ public class SelectorSwitch extends View {
 
         // Draw the knob and the notch.
         canvas.drawPath(selectorKnob.getKnobPath(), knobPaint);
+
+        // Draw the mode's base and show the current mode.
+        canvas.drawRoundRect(modeBaseLefts.get(currentMode), modeBaseRectF.top,
+                modeBaseRights.get(currentMode), modeBaseRectF.bottom,
+                modeBaseHeight / 2, modeBaseHeight / 2, modeBasePaint);
+
+        // Show the current mode name.
+        canvas.drawText(modes.get(currentMode), modeNameLefts.get(currentMode),
+                modeNameTop, modeNamePaint);
+
     }
 
     /**
@@ -461,14 +593,19 @@ public class SelectorSwitch extends View {
      */
     public void selectMode(int newMode) {
 
-        newMode = newMode % totalModes;
-        float currentAngle = currentMode * knobSweepAngle;
-        float newAngle = newMode * knobSweepAngle;
-        if (newAngle == 0) newAngle = 360;
+        float angle;
 
-        //selectorKnob.rotateBy(newAngle - currentAngle);
-        animateKnob(newAngle - currentAngle);
-        this.currentMode = newMode;
+        if (newMode > currentMode) {
+            // Next mode
+            angle = (newMode - currentMode) * knobSweepAngle;
+            currentMode = newMode % totalModes;
+        } else {
+            // Previous mode
+            angle = (newMode - currentMode) * knobSweepAngle;
+            currentMode = (newMode < 0) ? (totalModes - 1) : newMode;
+        }
+
+        animateKnob(angle);
         invalidate();
 
     }
@@ -481,7 +618,8 @@ public class SelectorSwitch extends View {
      */
     private void animateKnob(float rotateBy) {
 
-        new SelectorKnobAnimator(this, selectorKnob, rotateBy, STEP_ANGLE).execute();
+        new SelectorKnobAnimator(this, selectorKnob, rotateBy,
+                STEP_ANGLE, STEP_WAIT_NANOS).execute();
 
     }
 
@@ -504,5 +642,25 @@ public class SelectorSwitch extends View {
         return modes.get(index);
     }
 
+    /**
+     * Switches to the next mode in the dial.
+     */
+    public void selectNextMode() {
+        selectMode(currentMode + 1);
+    }
+
+    /**
+     * Switches to the previous mode in the dial.
+     */
+    public void selectPreviousMode() {
+        selectMode(currentMode - 1);
+    }
+
+    /**
+     * Switches to the default mode.
+     */
+    public void selectDefaultMode() {
+        selectMode(DEFAULT_MODE);
+    }
 }
 

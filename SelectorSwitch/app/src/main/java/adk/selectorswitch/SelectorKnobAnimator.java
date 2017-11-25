@@ -38,6 +38,12 @@ class SelectorKnobAnimator extends AsyncTask<Void, Void, Void> {
     private float stepAngle;
 
     /**
+     * The delay, in nanoseconds, between successive increments of
+     * the knob's rotation.
+     */
+    private int stepWait;
+
+    /**
      * Create an Async task to animate the knob's rotation.
      *
      * @param selectorSwitch <tt>SelectorSwitch</tt> : The SelectorSwitch whose knob has
@@ -46,15 +52,18 @@ class SelectorKnobAnimator extends AsyncTask<Void, Void, Void> {
      * @param rotateBy       <tt>float</tt> : The angle to rotate the knob by.
      * @param stepAngle      <tt>float</tt> : Angle increment to rotate the knob until
      *                       the ending angle has been reached.
+     * @param stepWaitNanos  <tt>int</tt> : Delay in nanoseconds between each successive
+     *                       increment of the knob's rotation.
      * @see SelectorSwitch
      * @see SelectorKnob
      */
     SelectorKnobAnimator(SelectorSwitch selectorSwitch, SelectorKnob selectorKnob,
-                         float rotateBy, float stepAngle) {
+                         float rotateBy, float stepAngle, int stepWaitNanos) {
         this.selectorSwitch = selectorSwitch;
         this.selectorKnob = selectorKnob;
-        this.rotateBy = rotateBy;
-        this.stepAngle = stepAngle;
+        this.stepAngle = rotateBy > 0 ? stepAngle : -stepAngle;
+        this.rotateBy = Math.abs(rotateBy);
+        this.stepWait = stepWaitNanos;
     }
 
     /**
@@ -69,10 +78,15 @@ class SelectorKnobAnimator extends AsyncTask<Void, Void, Void> {
      */
     @Override
     protected Void doInBackground(Void... params) {
-        for (float angle = 0; angle < rotateBy; angle += stepAngle) {
+
+        // Number of iterations.
+        float iter = Math.abs(rotateBy / stepAngle);
+
+        // Rotate with delay.
+        for (float i = 0; i < iter; i++) {
             synchronized (this) {
                 try {
-                    wait(0, 250);
+                    wait(0, stepWait);
                     publishProgress();
                 } catch (Exception ignored) {
                 }
