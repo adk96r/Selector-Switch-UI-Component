@@ -10,21 +10,5 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        final SelectorSwitch selectorSwitch = (SelectorSwitch) findViewById(R.id.selectorBtn);
-        selectorSwitch.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                selectorSwitch.selectNextMode();
-            }
-        });
-
-        selectorSwitch.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                selectorSwitch.selectDefaultMode();
-                return true;
-            }
-        });
     }
 }

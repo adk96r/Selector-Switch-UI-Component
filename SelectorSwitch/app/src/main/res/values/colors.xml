@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="reallyLowColor">#fdea33</color>
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
-    <color name="supaHighColor">#dd7777</color>
+
+    <color name="lowColor">#FF9800</color>
+    <color name="midColor">#FFEB3B</color>
+    <color name="highColor">#8BC34A</color>
 </resources>

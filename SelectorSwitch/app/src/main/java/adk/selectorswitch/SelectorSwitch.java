@@ -90,7 +90,7 @@ public class SelectorSwitch extends View {
     /**
      * The default color of the base's shadow.
      */
-    private static final int BASE_SHADOW_COLOR = Color.LTGRAY;
+    private static final int BASE_SHADOW_COLOR = Color.DKGRAY;
 
     /**
      * The default color of the knob's shadow.
@@ -281,8 +281,9 @@ public class SelectorSwitch extends View {
     /**
      * Initialises all the parameters of the selector switch. First obtains a screen density
      * and then initiates the modes and colors to default values by calling
-     * {@link #initModesAndColors(AttributeSet)}, followed by call to {@link #initComponents()}
-     * to initialise the main components - the knob, the dial and the base.
+     * {@link #initModesAndColors(AttributeSet)}, followed by calls to {@link #initComponents()},
+     * to initialise the main components - the knob, the dial and the base, and to
+     * {@link #initListeners()} to add basic click and long click listeners.
      *
      * @param context <tt>Context</tt> The context used to get the screen's density.
      * @throws IllegalSelectorException
@@ -294,6 +295,7 @@ public class SelectorSwitch extends View {
         this.screenDensity = context.getTheme().getResources().getDisplayMetrics().density;
         initModesAndColors(null);
         initComponents();
+        initListeners();
     }
 
     /**
@@ -315,6 +317,7 @@ public class SelectorSwitch extends View {
         this.screenDensity = context.getTheme().getResources().getDisplayMetrics().density;
         initModesAndColors(attrs);
         initComponents();
+        initListeners();
     }
 
     /**
@@ -449,6 +452,17 @@ public class SelectorSwitch extends View {
         }
     }
 
+    /**
+     * Sets the default onClick and onLongClick listeners to this view. The
+     * {@link #getDefaultOnClickListener()} provides an onClickListener that
+     * selects the next mode upon clicking, and the {@link #getDefaultOnLongClickListener()}
+     * selects the {@link #DEFAULT_MODE} of the mode upon a long click. However,
+     * both these listeners can be changed by the developer of the app.
+     */
+    private void initListeners() {
+        this.setOnClickListener(getDefaultOnClickListener());
+        this.setOnLongClickListener(getDefaultOnLongClickListener());
+    }
 
     /**
      * Calculates and sets the dimensions of the view. The component is padded by
@@ -661,6 +675,37 @@ public class SelectorSwitch extends View {
      */
     public void selectDefaultMode() {
         selectMode(DEFAULT_MODE);
+    }
+
+    /**
+     * Returns an onClickListener that selects the
+     * next mode upon clicking the switch.
+     *
+     * @return OnClickListener
+     */
+    private OnClickListener getDefaultOnClickListener() {
+        return new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectNextMode();
+            }
+        };
+    }
+
+    /**
+     * Returns an onLongClickListener that selects the
+     * {@link #DEFAULT_MODE} upon long clicking the switch.
+     *
+     * @return OnLongClickListener
+     */
+    private OnLongClickListener getDefaultOnLongClickListener() {
+        return new OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                selectDefaultMode();
+                return true;
+            }
+        };
     }
 }
 
